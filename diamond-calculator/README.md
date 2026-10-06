@@ -25,7 +25,17 @@ python3 scripts/scrape.py
 1. Taş kesimini seçin
 2. Ölçü / boyutu seçin
 3. Adet girin
-4. Karat başına fiyat girin
-5. Toplam karat ve toplam fiyatı görün
+4. Karat başına fiyat girin (**$ / USD**)
+5. Toplam karat ve toplam fiyatı ($) görün
 
-UI Türkçedir. Veri kaynağı: [diamondsizecharts.com](https://diamondsizecharts.com/).
+UI Türkçedir. Fiyatlar USD ($) olarak gösterilir. Kesim görselleri yerel SVG silüetlerdir.
+
+Veri kaynağı: [diamondsizecharts.com](https://diamondsizecharts.com/).
+
+## Görseller
+
+```bash
+python3 scripts/generate_silhouettes.py
+```
+
+Temiz kesim silüetleri `public/images/*.svg` altına yazılır (bulanık chart fotoğrafları yerine).

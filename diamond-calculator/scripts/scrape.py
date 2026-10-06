@@ -80,6 +80,55 @@ def parse_range(cell: str) -> tuple[float | None, float | None, float | None]:
     return lo, hi, round((lo + hi) / 2, 4)
 
 
+def heal_mm_range(
+    mmin: float, mmax: float, cmin: float, cmax: float
+) -> tuple[float, float, float] | None:
+    """Fix known diamondsizecharts.com typos; return (mmin, mmax, mmid) or None to drop."""
+    # "130-1.35 mm" for 0.01 ct melee → 1.30-1.35 mm
+    if mmin > 40 and 1.0 <= mmax <= 2.0 and cmax <= 0.05:
+        mmin = round(mmax - 0.05, 2)
+    # "4.20 - 0.43 mm" for ~0.27 ct → 4.20-4.30 mm
+    if mmin > mmax and 3.5 <= mmin <= 6.0 and mmax < 1.0 and 0.2 <= cmin <= 0.4:
+        mmax = round(mmin + 0.10, 2)
+    if mmin > mmax or mmin <= 0:
+        return None
+    if mmin > 40 or mmax > 40:
+        return None
+    mmid = round((mmin + mmax) / 2, 4)
+    return mmin, mmax, mmid
+
+
+def fmt_mm(value: float) -> str:
+    """Always show two decimals for mm (e.g. 0.90)."""
+    return f"{value:.2f}"
+
+
+def fmt_ct(value: float) -> str:
+    text = f"{value:.4f}".rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def size_label(
+    cmin: float,
+    cmax: float,
+    mmin: float,
+    mmax: float,
+    *,
+    width: tuple[float, float] | None = None,
+) -> str:
+    if width:
+        wmin, wmax = width
+        mm_part = f"{fmt_mm(mmin)}–{fmt_mm(mmax)} × {fmt_mm(wmin)}–{fmt_mm(wmax)} mm"
+    elif mmin == mmax:
+        mm_part = f"{fmt_mm(mmin)} mm"
+    else:
+        mm_part = f"{fmt_mm(mmin)}–{fmt_mm(mmax)} mm"
+
+    if cmin == cmax:
+        return f"{mm_part} · {fmt_ct(cmin)} ct"
+    return f"{mm_part} · {fmt_ct(cmin)}–{fmt_ct(cmax)} ct"
+
+
 def is_size_header(cells: list[str]) -> bool:
     joined = " ".join(cells).lower()
     has_carat = any(k in joined for k in ("carat", "ct", "weight", "cts"))
@@ -183,9 +232,7 @@ def extract_matrix_sizes(table: list[list[str]]) -> list[dict]:
                     "widthMm": wmid,
                     "widthMmMin": wmin,
                     "widthMmMax": wmax,
-                    "label": f"{lmin:g}–{lmax:g} × {wmin:g}–{wmax:g} mm · {cmin:g}–{cmax:g} ct"
-                    if cmin != cmax
-                    else f"{lmin:g}–{lmax:g} × {wmin:g}–{wmax:g} mm · {cmid:g} ct",
+                    "label": size_label(cmin, cmax, lmin, lmax, width=(wmin, wmax)),
                 }
             )
     sizes.sort(key=lambda s: (s["mm"], s.get("widthMm", 0), s["carat"]))
@@ -232,23 +279,16 @@ def extract_sizes(html: str) -> list[dict]:
             mmin, mmax, mmid = parse_range(cells[1])
             if cmid is None or mmid is None or mmin is None or mmax is None:
                 continue
-            # Drop source typos (e.g. "130-1.35 mm") and absurd values
-            if mmin > mmax or cmin > cmax:
+            if cmin is None or cmax is None or cmin > cmax or cmin <= 0 or cmid > 50:
                 continue
-            if mmid > 40 or cmid > 50 or mmin <= 0 or cmin <= 0:
+            healed = heal_mm_range(mmin, mmax, cmin, cmax)
+            if healed is None:
                 continue
+            mmin, mmax, mmid = healed
             key = (cmid, mmid, None, cmin, cmax, mmin, mmax)
             if key in seen:
                 continue
             seen.add(key)
-            if cmin == cmax and mmin == mmax:
-                label = f"{mmid:g} mm · {cmid:g} ct"
-            elif cmin == cmax:
-                label = f"{mmin:g}–{mmax:g} mm · {cmid:g} ct"
-            elif mmin == mmax:
-                label = f"{mmid:g} mm · {cmin:g}–{cmax:g} ct"
-            else:
-                label = f"{mmin:g}–{mmax:g} mm · {cmin:g}–{cmax:g} ct"
             entry: dict = {
                 "carat": cmid,
                 "caratMin": cmin,
@@ -256,7 +296,7 @@ def extract_sizes(html: str) -> list[dict]:
                 "mm": mmid,
                 "mmMin": mmin,
                 "mmMax": mmax,
-                "label": label,
+                "label": size_label(cmin, cmax, mmin, mmax),
             }
             # Optional sieve / pcs columns
             if len(cells) >= 3 and cells[2]:
@@ -401,14 +441,8 @@ def main() -> None:
         cut_id = "round" if page.get("id") == 9 else slug.replace("-diamond-size-chart", "").replace("-diamond-size-charts", "").replace("-diamond-conversion-tool", "")
         cut_id = cut_id.replace("-shaped", "").strip("-") or slugify(title)
 
-        local_image = None
-        if image_url:
-            ext = Path(image_url.split("?")[0]).suffix or ".png"
-            local_name = f"{cut_id}{ext}"
-            dest = IMG_DIR / local_name
-            if download_image(image_url, dest):
-                local_image = f"images/{local_name}"
-                print(f"  image -> {local_name}")
+        # UI uses local silhouette SVGs (generated separately) — keep source URL for reference only
+        local_image = f"images/{cut_id}.svg"
 
         cut = {
             "id": cut_id,
@@ -421,7 +455,7 @@ def main() -> None:
             "sizes": sizes,
         }
         cuts.append(cut)
-        print(f"  sizes: {len(sizes)}")
+        print(f"  sizes: {len(sizes)} · silhouette {local_image}")
         time.sleep(0.35)
 
     # Prefer common cuts first (match by id prefix)

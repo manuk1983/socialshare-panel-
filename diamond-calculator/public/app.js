@@ -1,5 +1,7 @@
 const fmt = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 4 });
-const money = new Intl.NumberFormat("tr-TR", {
+const money = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
   minimumFractionDigits: 0,
   maximumFractionDigits: 2,
 });
@@ -68,10 +70,15 @@ function renderSizes() {
     els.sizeSelect.append(opt);
   });
 
-  let pick = Math.floor(cut.sizes.length / 2);
-  const nearOne = cut.sizes.findIndex((s) => Math.abs(s.carat - 1) < 0.08);
-  if (nearOne >= 0) pick = nearOne;
-  els.sizeSelect.value = String(pick);
+  // Round: default to first size (starts at 0.90 mm). Others: prefer ~1 ct.
+  if (cut.id === "round") {
+    els.sizeSelect.value = "0";
+  } else {
+    let pick = Math.floor(cut.sizes.length / 2);
+    const nearOne = cut.sizes.findIndex((s) => Math.abs(s.carat - 1) < 0.08);
+    if (nearOne >= 0) pick = nearOne;
+    els.sizeSelect.value = String(pick);
+  }
 }
 
 function selectCut(id) {
