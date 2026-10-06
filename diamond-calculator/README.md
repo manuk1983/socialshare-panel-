@@ -28,14 +28,4 @@ python3 scripts/scrape.py
 4. Karat başına fiyat girin (**$ / USD**)
 5. Toplam karat ve toplam fiyatı ($) görün
 
-UI Türkçedir. Fiyatlar USD ($) olarak gösterilir. Kesim görselleri yerel SVG silüetlerdir.
-
-Veri kaynağı: [diamondsizecharts.com](https://diamondsizecharts.com/).
-
-## Görseller
-
-```bash
-python3 scripts/generate_silhouettes.py
-```
-
-Temiz kesim silüetleri `public/images/*.svg` altına yazılır (bulanık chart fotoğrafları yerine).
+UI Türkçedir. Fiyatlar USD ($) olarak gösterilir. Kesim görselleri **gerçekçi stüdyo fotoğraf** stilindedir (style 1).
