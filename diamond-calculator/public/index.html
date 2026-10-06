@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Diamonds Carat — Karat & Fiyat Hesaplayıcı</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <p class="brand">Diamonds Carat</p>
+    <h1>Karat &amp; Fiyat Hesaplayıcı</h1>
+    <p class="lede">Kesim ve ölçü seçin, adet ile karat başına fiyat girin — toplam karat ve tutarı anında görün.</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel cuts" aria-labelledby="cuts-title">
+      <h2 id="cuts-title">Taş kesimi</h2>
+      <div id="cut-grid" class="cut-grid" role="listbox" aria-label="Taş kesimi seçin"></div>
+    </section>
+
+    <section class="panel calc" aria-labelledby="calc-title">
+      <div class="preview">
+        <img id="cut-image" alt="" width="220" height="220" />
+        <div>
+          <p class="preview-label">Seçili kesim</p>
+          <p id="cut-name" class="preview-name">—</p>
+        </div>
+      </div>
+
+      <h2 id="calc-title" class="sr-only">Hesaplama</h2>
+
+      <label class="field">
+        <span>Ölçü / boyut</span>
+        <select id="size-select"></select>
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Adet</span>
+          <input id="qty-input" type="number" min="1" step="1" value="1" inputmode="numeric" />
+        </label>
+        <label class="field">
+          <span>Karat başına fiyat</span>
+          <input id="price-input" type="number" min="0" step="any" value="" placeholder="örn. 4500" inputmode="decimal" />
+        </label>
+      </div>
+
+      <div class="totals" aria-live="polite">
+        <div class="total-card">
+          <span class="total-label">Birim karat</span>
+          <strong id="unit-carat">—</strong>
+        </div>
+        <div class="total-card">
+          <span class="total-label">Toplam karat</span>
+          <strong id="total-carat">—</strong>
+        </div>
+        <div class="total-card accent">
+          <span class="total-label">Toplam fiyat</span>
+          <strong id="total-price">—</strong>
+        </div>
+      </div>
+
+      <p id="meta" class="meta"></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Ölçü verileri <a href="https://diamondsizecharts.com/" rel="noopener" target="_blank">diamondsizecharts.com</a> kaynaklıdır. Yerel kopya ile çevrimdışı çalışır.</p>
+  </footer>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
