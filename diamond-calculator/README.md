@@ -29,3 +29,13 @@ python3 scripts/scrape.py
 5. Toplam karat ve toplam fiyatı ($) görün
 
 UI Türkçedir. Fiyatlar USD ($) olarak gösterilir. Kesim görselleri **gerçekçi stüdyo fotoğraf** stilindedir (style 1).
+
+## Fiyat listesi & Excel
+
+Hesaplama panelinde **Fiyat listesi (Excel)** bölümünden şablon indirip `.xlsx` yükleyin. Fiyatlar tarayıcı `localStorage` içinde kesim + ölçü bazında saklanır; seçimde otomatik dolar.
+
+## Kesim bilgileri
+
+**Kesim bilgileri** sekmesinden kesimlere tıklayın; mm boyutları ve şema panelde açılır (derinlik tahmini olabilir).
+
+Detaylı Excel sütunları: Project docs `diamond-carat-calculator.md`.
