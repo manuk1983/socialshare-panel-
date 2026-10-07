@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Diamonds Carat — Karat & Fiyat Hesaplayıcı</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <p class="brand">Diamonds Carat</p>
+    <h1 id="page-title">Karat &amp; Fiyat Hesaplayıcı</h1>
+    <p class="lede" id="page-lede">Kesim ve ölçü seçin, adet ile karat başına fiyat girin — toplam karat ve tutarı anında görün.</p>
+  </header>
+
+  <nav class="tabs" aria-label="Ana sekmeler">
+    <button type="button" id="tab-calc" class="tab active" aria-selected="true">Hesaplama</button>
+    <button type="button" id="tab-info" class="tab" aria-selected="false">Kesim bilgileri</button>
+  </nav>
+
+  <div id="view-calc" class="view">
+    <main class="layout">
+      <section class="panel cuts" aria-labelledby="cuts-title">
+        <h2 id="cuts-title">Taş kesimi</h2>
+        <div id="cut-grid" class="cut-grid" role="listbox" aria-label="Taş kesimi seçin"></div>
+      </section>
+
+      <section class="panel calc" aria-labelledby="calc-title">
+        <div class="preview">
+          <img id="cut-image" alt="" width="220" height="220" />
+          <div>
+            <p class="preview-label">Seçili kesim</p>
+            <p id="cut-name" class="preview-name">—</p>
+          </div>
+        </div>
+
+        <h2 id="calc-title" class="sr-only">Hesaplama</h2>
+
+        <label class="field">
+          <span>Ölçü / boyut</span>
+          <select id="size-select"></select>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Adet</span>
+            <input id="qty-input" type="number" min="1" step="1" value="1" inputmode="numeric" />
+          </label>
+          <label class="field">
+            <span>Karat başına fiyat ($)</span>
+            <input id="price-input" type="number" min="0" step="any" value="" placeholder="örn. 4500" inputmode="decimal" />
+          </label>
+        </div>
+
+        <div class="totals" aria-live="polite">
+          <div class="total-card">
+            <span class="total-label">Birim karat</span>
+            <strong id="unit-carat">—</strong>
+          </div>
+          <div class="total-card">
+            <span class="total-label">Toplam karat</span>
+            <strong id="total-carat">—</strong>
+          </div>
+          <div class="total-card accent">
+            <span class="total-label">Toplam fiyat ($)</span>
+            <strong id="total-price">—</strong>
+          </div>
+        </div>
+
+        <details class="price-import">
+          <summary>Fiyat listesi (Excel)</summary>
+          <p class="hint">Her kesim + ölçü için karat başına fiyat ($) yükleyin. Seçimde otomatik dolar.</p>
+          <div class="import-actions">
+            <button type="button" id="btn-download-template" class="btn secondary">Şablon indir (.xlsx)</button>
+            <label class="btn primary file-label">
+              Excel yükle
+              <input id="excel-input" type="file" accept=".xlsx,.xls,.csv" hidden />
+            </label>
+          </div>
+          <p id="import-status" class="import-status" role="status"></p>
+        </details>
+
+        <p id="meta" class="meta"></p>
+      </section>
+    </main>
+  </div>
+
+  <div id="view-info" class="view hidden" hidden>
+    <main class="layout layout-info">
+      <section class="panel cuts" aria-labelledby="info-cuts-title">
+        <h2 id="info-cuts-title">Kesim seçin</h2>
+        <p class="hint">Bir kesime tıklayın — ölçüler ve boyut şeması açılır.</p>
+        <div id="info-cut-grid" class="cut-grid" role="list"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="cut-info-modal" class="cut-modal">
+    <div class="cut-modal-inner">
+      <header class="cut-modal-header">
+        <div>
+          <p class="preview-label">Kesim bilgisi</p>
+          <h2 id="modal-cut-name">—</h2>
+        </div>
+        <button type="button" id="modal-close" class="btn icon-close" aria-label="Kapat">×</button>
+      </header>
+      <div class="cut-modal-body">
+        <div class="modal-top">
+          <img id="modal-cut-image" alt="" class="modal-cut-photo" />
+          <div class="modal-copy">
+            <p id="modal-cut-desc"></p>
+            <p class="hint dim-note">Derinlik (mm) kaynakta yoksa tipik kesim oranından <strong>tahmini</strong> gösterilir.</p>
+          </div>
+        </div>
+        <label class="field">
+          <span>Ölçü / boyut</span>
+          <select id="modal-size-select"></select>
+        </label>
+        <div class="dim-panel">
+          <h3>Boyutlar (mm)</h3>
+          <div id="dim-diagram" class="dim-diagram" aria-hidden="true"></div>
+          <ul id="dim-list" class="dim-list"></ul>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <footer class="site-footer">
+    <p>Ölçü verileri <a href="https://diamondsizecharts.com/" rel="noopener" target="_blank">diamondsizecharts.com</a> kaynaklıdır. Fiyatlar tarayıcıda saklanır.</p>
+  </footer>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="app.js" type="module"></script>
+</body>
+</html>

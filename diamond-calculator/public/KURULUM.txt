@@ -1,0 +1,15 @@
+Diamonds Carat — yerel çalıştırma
+================================
+
+SI Jewels görürsen yanlış klasördesin; bu klasörde baslat çalıştır → http://localhost:5180
+
+Windows:  baslat.bat  dosyasına çift tıkla
+Mac/Linux:  ./baslat.sh
+
+Doğru klasör:
+  .../diamond-calculator/public/
+
+Yanlış (SI Jewels / socialshare-panel ana uygulama):
+  repo kökü, SocialShare/, SocialShareFull/  veya 5173’te başka bir proje
+
+Tarayıcı adresi:  http://localhost:5180
