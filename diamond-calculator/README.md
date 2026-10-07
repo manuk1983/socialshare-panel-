@@ -4,12 +4,17 @@ Basit web uygulaması: diamondsizecharts.com kesim / mm / karat verilerini yerel
 
 ## Çalıştırma
 
+SI Jewels / socialshare-panel **değil** — sadece bu klasör:
+
 ```bash
 cd diamond-calculator/public
-python3 -m http.server 5173
+./baslat.sh
+# veya: python3 -m http.server 5180
 ```
 
-Tarayıcıda: http://localhost:5173
+Windows: `baslat.bat` · Ayrıntı: `public/KURULUM.txt`
+
+Tarayıcıda: **http://localhost:5180** (5180 = Diamonds Carat; 5173 başka uygulamaya ait olabilir)
 
 ## Veriyi yenileme
 
