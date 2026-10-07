@@ -367,10 +367,42 @@ input:focus {
   width: 100%;
   background: #121c26;
   color: var(--ink);
+  margin: auto;
 }
 
 .cut-modal::backdrop {
   background: rgba(0, 0, 0, 0.65);
+}
+
+/* Fallback when showModal() is unavailable or blocked */
+.cut-modal.is-open {
+  display: block;
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  z-index: 1000;
+  max-height: min(90vh, 720px);
+  overflow: auto;
+}
+
+.cut-modal.is-open::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: -1;
+}
+
+#info-cut-grid .cut-card {
+  touch-action: manipulation;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+#info-cut-grid .cut-card img,
+#info-cut-grid .cut-card span {
+  pointer-events: none;
 }
 
 .cut-modal-inner {

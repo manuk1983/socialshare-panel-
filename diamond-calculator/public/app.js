@@ -134,9 +134,12 @@ function renderCuts() {
 function renderInfoCuts() {
   els.infoCutGrid.innerHTML = "";
   for (const cut of data.cuts) {
-    els.infoCutGrid.append(
-      cutCard(cut, { selectedId: null, onClick: openCutInfoModal })
-    );
+    // Clicks handled via delegation on #info-cut-grid (more reliable than per-card listeners)
+    const card = cutCard(cut, { selectedId: null, onClick: () => {} });
+    card.removeAttribute("role");
+    card.setAttribute("type", "button");
+    card.setAttribute("aria-haspopup", "dialog");
+    els.infoCutGrid.append(card);
   }
 }
 
@@ -342,10 +345,28 @@ function renderDimDiagram(cut, size, rows) {
   }
 }
 
+function closeCutInfoModal() {
+  const dialog = els.modal;
+  if (!dialog) return;
+  dialog.classList.remove("is-open");
+  if (typeof dialog.close === "function" && dialog.open) {
+    try {
+      dialog.close();
+    } catch {
+      /* ignore */
+    }
+  }
+  dialog.removeAttribute("open");
+}
+
 function openCutInfoModal(cutId) {
+  if (!cutId || !data) return;
   modalCutId = cutId;
   const cut = data.cuts.find((c) => c.id === cutId);
-  if (!cut) return;
+  if (!cut || !els.modal) {
+    console.warn("openCutInfoModal: cut or dialog missing", cutId);
+    return;
+  }
 
   els.modalCutName.textContent = cut.name;
   els.modalCutImage.src = cut.image || "";
@@ -364,7 +385,20 @@ function openCutInfoModal(cutId) {
   if (cut.id === "round") els.modalSizeSelect.value = "0";
 
   updateModalDimensions();
-  els.modal.showModal();
+
+  // Prefer native dialog; fall back to CSS class if showModal fails
+  try {
+    if (typeof els.modal.showModal === "function") {
+      if (!els.modal.open) els.modal.showModal();
+    } else {
+      els.modal.setAttribute("open", "");
+      els.modal.classList.add("is-open");
+    }
+  } catch (err) {
+    console.warn("showModal failed, using fallback", err);
+    els.modal.setAttribute("open", "");
+    els.modal.classList.add("is-open");
+  }
 }
 
 function updateModalDimensions() {
@@ -531,6 +565,33 @@ async function boot() {
     e.target.value = "";
   });
   els.modalSizeSelect.addEventListener("change", updateModalDimensions);
+
+  // Event delegation: reliable cut → modal open on Kesim bilgileri grid
+  els.infoCutGrid.addEventListener("click", (e) => {
+    const card = e.target.closest(".cut-card");
+    if (!card || !els.infoCutGrid.contains(card)) return;
+    e.preventDefault();
+    openCutInfoModal(card.dataset.cutId);
+  });
+
+  document.getElementById("modal-close")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeCutInfoModal();
+  });
+
+  els.modal?.addEventListener("click", (e) => {
+    // Click on backdrop (dialog itself, not inner content) closes
+    if (e.target === els.modal) closeCutInfoModal();
+  });
+
+  els.modal?.addEventListener("cancel", (e) => {
+    e.preventDefault();
+    closeCutInfoModal();
+  });
+
+  // Expose for debugging / Try Live console checks
+  window.__openCutInfo = openCutInfoModal;
+  window.__closeCutInfo = closeCutInfoModal;
 }
 
 boot().catch((err) => {

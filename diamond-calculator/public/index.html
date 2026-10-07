@@ -101,13 +101,13 @@
   </div>
 
   <dialog id="cut-info-modal" class="cut-modal">
-    <form method="dialog" class="cut-modal-inner">
+    <div class="cut-modal-inner">
       <header class="cut-modal-header">
         <div>
           <p class="preview-label">Kesim bilgisi</p>
           <h2 id="modal-cut-name">—</h2>
         </div>
-        <button type="submit" class="btn icon-close" aria-label="Kapat">×</button>
+        <button type="button" id="modal-close" class="btn icon-close" aria-label="Kapat">×</button>
       </header>
       <div class="cut-modal-body">
         <div class="modal-top">
@@ -127,7 +127,7 @@
           <ul id="dim-list" class="dim-list"></ul>
         </div>
       </div>
-    </form>
+    </div>
   </dialog>
 
   <footer class="site-footer">
