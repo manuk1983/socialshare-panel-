@@ -254,87 +254,281 @@ function switchTab(which) {
   }
 }
 
-function measureRows(cut, size) {
-  const rows = [];
-  const avg = (size.mmMin + size.mmMax) / 2;
+function getCutDims(cut, size) {
+  const length = (size.mmMin + size.mmMax) / 2;
+  const hasWidth = size.widthMmMin != null && size.widthMmMax != null;
+  const width = hasWidth ? (size.widthMmMin + size.widthMmMax) / 2 : length;
 
-  if (size.widthMmMin != null && size.widthMmMax != null) {
-    rows.push({
-      label: "Uzunluk (L)",
-      min: size.mmMin,
-      max: size.mmMax,
+  const depthRatio =
+    cut.id === "round" || cut.id === "old-european-cut" || cut.id === "rose-cut"
+      ? 0.59
+      : hasWidth
+        ? 0.42
+        : cut.id.includes("emerald") ||
+            cut.id.includes("asscher") ||
+            cut.id === "baguette" ||
+            cut.id.includes("baguette")
+          ? 0.68
+          : cut.id.includes("princess") || cut.id.includes("radiant")
+            ? 0.72
+            : 0.62;
+  const depth = length * depthRatio;
+
+  return {
+    length,
+    width,
+    depth,
+    lengthRange: [size.mmMin, size.mmMax],
+    widthRange: hasWidth ? [size.widthMmMin, size.widthMmMax] : [size.mmMin, size.mmMax],
+    hasWidth,
+    depthEst: true,
+    lengthLabel:
+      cut.id === "round" || cut.id === "old-european-cut" || cut.id === "rose-cut"
+        ? "Çap"
+        : hasWidth
+          ? "Uzunluk"
+          : "Genişlik",
+    widthLabel: hasWidth ? "Genişlik" : null,
+  };
+}
+
+function measureRows(cut, size) {
+  const d = getCutDims(cut, size);
+  const rows = [
+    {
+      label: d.lengthLabel,
+      min: d.lengthRange[0],
+      max: d.lengthRange[1],
       est: false,
-    });
+    },
+  ];
+  if (d.widthLabel) {
     rows.push({
-      label: "Genişlik (W)",
-      min: size.widthMmMin,
-      max: size.widthMmMax,
-      est: false,
-    });
-  } else if (cut.id === "round" || cut.id === "old-european-cut") {
-    rows.push({ label: "Çap", min: size.mmMin, max: size.mmMax, est: false });
-  } else {
-    rows.push({
-      label: "Ana ölçü",
-      min: size.mmMin,
-      max: size.mmMax,
+      label: d.widthLabel,
+      min: d.widthRange[0],
+      max: d.widthRange[1],
       est: false,
     });
   }
-
-  const depthRatio =
-    cut.id === "round" || cut.id === "old-european-cut"
-      ? 0.59
-      : size.widthMmMin != null
-        ? 0.42
-        : cut.id.includes("emerald") || cut.id.includes("asscher")
-          ? 0.68
-          : 0.62;
-  const d = avg * depthRatio;
   rows.push({
     label: "Derinlik",
-    min: d,
-    max: d,
+    min: d.depth,
+    max: d.depth,
     est: true,
   });
-
   return rows;
 }
 
 function fmtMmRange(min, max) {
-  if (min === max) return `${fmt.format(min)} mm`;
+  if (Math.abs(min - max) < 1e-9) return `${fmt.format(min)} mm`;
   return `${fmt.format(min)}–${fmt.format(max)} mm`;
 }
 
-function renderDimDiagram(cut, size, rows) {
-  const w = 280;
-  const h = 160;
-  const hasWidth = size.widthMmMin != null;
-  const lAvg = (size.mmMin + size.mmMax) / 2;
-  const wAvg = hasWidth ? (size.widthMmMin + size.widthMmMax) / 2 : lAvg;
-  const scale = Math.min(100 / Math.max(lAvg, wAvg), 8);
-  const rw = Math.max(24, lAvg * scale);
-  const rh = Math.max(24, wAvg * scale);
-  const cx = w / 2;
-  const cy = h / 2 + 8;
+function fmtMm(n) {
+  return `${fmt.format(Number(n.toFixed(2)))} mm`;
+}
 
-  let shape;
-  if (cut.id === "round" || cut.id === "old-european-cut") {
-    const r = rw / 2;
-    shape = `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r}" fill="rgba(196,163,90,0.15)" stroke="#c4a35a" stroke-width="2"/>`;
-  } else if (cut.id === "pear-cut") {
-    shape = `<path d="M ${cx} ${cy - rh / 2} C ${cx + rw / 2} ${cy - rh / 4}, ${cx + rw / 2} ${cy + rh / 3}, ${cx} ${cy + rh / 2} C ${cx - rw / 2} ${cy + rh / 3}, ${cx - rw / 2} ${cy - rh / 4}, ${cx} ${cy - rh / 2} Z" fill="rgba(196,163,90,0.15)" stroke="#c4a35a" stroke-width="2"/>`;
-  } else {
-    shape = `<rect x="${cx - rw / 2}" y="${cy - rh / 2}" width="${rw}" height="${rh}" rx="6" fill="rgba(196,163,90,0.15)" stroke="#c4a35a" stroke-width="2"/>`;
+/** Profile family for technical side-view schematics */
+function profileKind(cutId) {
+  if (
+    cutId === "round" ||
+    cutId === "old-european-cut" ||
+    cutId === "rose-cut" ||
+    cutId === "old-mine-cut"
+  )
+    return "brilliant";
+  if (
+    cutId.includes("emerald") ||
+    cutId.includes("asscher") ||
+    cutId === "baguette" ||
+    cutId.includes("baguette") ||
+    cutId === "carre-cut" ||
+    cutId === "french-cut"
+  )
+    return "step";
+  if (cutId.includes("princess") || cutId.includes("radiant") || cutId === "lucida-cut")
+    return "square-brilliant";
+  if (cutId === "pear-cut" || cutId.includes("marquise") || cutId === "oval-cut")
+    return "elongated";
+  if (cutId === "heart-cut") return "heart";
+  if (cutId.includes("bullet") || cutId === "kite-cut" || cutId === "lozenge-cut")
+    return "pointed";
+  if (cutId === "half-moon-cut") return "halfmoon";
+  if (cutId === "trilliant-cut") return "triangle";
+  return "brilliant";
+}
+
+function dimTick(x1, y1, x2, y2, stroke) {
+  // Perpendicular end ticks for technical dimension lines
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const px = (-dy / len) * 4;
+  const py = (dx / len) * 4;
+  return `
+    <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="1.2"/>
+    <line x1="${x1 - px}" y1="${y1 - py}" x2="${x1 + px}" y2="${y1 + py}" stroke="${stroke}" stroke-width="1.2"/>
+    <line x1="${x2 - px}" y1="${y2 - py}" x2="${x2 + px}" y2="${y2 + py}" stroke="${stroke}" stroke-width="1.2"/>
+  `;
+}
+
+function stoneProfilePath(kind, left, top, right, girdleY, bottom, tableHalf) {
+  const cx = (left + right) / 2;
+  const tableL = cx - tableHalf;
+  const tableR = cx + tableHalf;
+
+  switch (kind) {
+    case "step":
+      // Angular step-cut silhouette
+      return `M ${tableL} ${top}
+        L ${tableR} ${top}
+        L ${right - 6} ${girdleY - 4}
+        L ${right} ${girdleY}
+        L ${right - 4} ${girdleY + 6}
+        L ${cx + 8} ${bottom}
+        L ${cx - 8} ${bottom}
+        L ${left + 4} ${girdleY + 6}
+        L ${left} ${girdleY}
+        L ${left + 6} ${girdleY - 4}
+        Z`;
+    case "square-brilliant":
+      return `M ${tableL} ${top}
+        L ${tableR} ${top}
+        L ${right - 2} ${girdleY - 2}
+        L ${right} ${girdleY}
+        L ${cx + 10} ${bottom}
+        L ${cx - 10} ${bottom}
+        L ${left} ${girdleY}
+        L ${left + 2} ${girdleY - 2}
+        Z`;
+    case "elongated":
+      return `M ${tableL} ${top}
+        L ${tableR} ${top}
+        L ${right} ${girdleY}
+        L ${cx + 6} ${bottom}
+        L ${cx - 6} ${bottom}
+        L ${left} ${girdleY}
+        Z`;
+    case "heart":
+      return `M ${tableL} ${top + 4}
+        Q ${cx} ${top - 2} ${tableR} ${top + 4}
+        L ${right} ${girdleY}
+        L ${cx} ${bottom}
+        L ${left} ${girdleY}
+        Z`;
+    case "pointed":
+      return `M ${tableL} ${top}
+        L ${tableR} ${top}
+        L ${right} ${girdleY}
+        L ${cx} ${bottom}
+        L ${left} ${girdleY}
+        Z`;
+    case "halfmoon":
+      return `M ${left} ${top}
+        L ${right} ${top}
+        L ${right} ${girdleY}
+        Q ${cx} ${bottom} ${left} ${girdleY}
+        Z`;
+    case "triangle":
+      return `M ${cx} ${top}
+        L ${right} ${girdleY}
+        L ${cx} ${bottom}
+        L ${left} ${girdleY}
+        Z`;
+    case "brilliant":
+    default:
+      // Classic round brilliant side profile
+      return `M ${tableL} ${top}
+        L ${tableR} ${top}
+        L ${right - 4} ${girdleY - 3}
+        L ${right} ${girdleY}
+        L ${cx + 3} ${bottom}
+        L ${cx - 3} ${bottom}
+        L ${left} ${girdleY}
+        L ${left + 4} ${girdleY - 3}
+        Z`;
   }
+}
 
-  const dimH = `<line x1="${cx - rw / 2}" y1="${cy + rh / 2 + 18}" x2="${cx + rw / 2}" y2="${cy + rh / 2 + 18}" stroke="#9aadb8" stroke-width="1.5"/><text x="${cx}" y="${cy + rh / 2 + 32}" fill="#e8eef4" font-size="11" text-anchor="middle">${hasWidth ? "L" : "Ø/L"}</text>`;
-  const dimV =
-    hasWidth
-      ? `<line x1="${cx + rw / 2 + 14}" y1="${cy - rh / 2}" x2="${cx + rw / 2 + 14}" y2="${cy + rh / 2}" stroke="#9aadb8" stroke-width="1.5"/><text x="${cx + rw / 2 + 22}" y="${cy + 4}" fill="#e8eef4" font-size="11">W</text>`
-      : "";
+function renderDimDiagram(cut, size, rows) {
+  const dims = getCutDims(cut, size);
+  const kind = profileKind(cut.id);
+  const stroke = "#4a5560";
+  const fill = "#e8ecf0";
+  const ink = "#2d3740";
+  const muted = "#6b7785";
 
-  els.dimDiagram.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="140">${shape}${dimH}${dimV}</svg>`;
+  const svgW = 360;
+  const svgH = 260;
+  // Stone drawing box (leave margins for dimension callouts)
+  const left = 70;
+  const right = 250;
+  const top = 48;
+  const bottom = 200;
+  const stoneW = right - left;
+  const stoneH = bottom - top;
+  const girdleY = top + stoneH * 0.32;
+  const tableHalf = stoneW * 0.22;
+  const cx = (left + right) / 2;
+
+  const profile = stoneProfilePath(kind, left, top, right, girdleY, bottom, tableHalf);
+
+  // Facet hints (subtle internals)
+  const facets = `
+    <line x1="${cx}" y1="${top}" x2="${cx}" y2="${bottom}" stroke="${stroke}" stroke-width="0.6" opacity="0.35"/>
+    <line x1="${left}" y1="${girdleY}" x2="${right}" y2="${girdleY}" stroke="${stroke}" stroke-width="1" opacity="0.55"/>
+    <line x1="${cx - tableHalf}" y1="${top}" x2="${left}" y2="${girdleY}" stroke="${stroke}" stroke-width="0.7" opacity="0.4"/>
+    <line x1="${cx + tableHalf}" y1="${top}" x2="${right}" y2="${girdleY}" stroke="${stroke}" stroke-width="0.7" opacity="0.4"/>
+    <line x1="${left}" y1="${girdleY}" x2="${cx}" y2="${bottom}" stroke="${stroke}" stroke-width="0.7" opacity="0.4"/>
+    <line x1="${right}" y1="${girdleY}" x2="${cx}" y2="${bottom}" stroke="${stroke}" stroke-width="0.7" opacity="0.4"/>
+  `;
+
+  // Width / diameter dimension (above stone)
+  const widthText = dims.hasWidth
+    ? `${fmtMm(dims.length)} × ${fmtMm(dims.width)}`
+    : fmtMmRange(dims.lengthRange[0], dims.lengthRange[1]);
+  const widthCaption = dims.hasWidth
+    ? "UZUNLUK × GENİŞLİK"
+    : dims.lengthLabel === "Çap"
+      ? "ÇAP (Ø)"
+      : "GENİŞLİK";
+
+  const widthDim = `
+    ${dimTick(left, 28, right, 28, stroke)}
+    <text x="${cx}" y="18" fill="${ink}" font-size="11" font-family="Outfit, sans-serif" font-weight="500" text-anchor="middle">${widthText}</text>
+    <text x="${cx}" y="40" fill="${muted}" font-size="9" font-family="Outfit, sans-serif" letter-spacing="0.06em" text-anchor="middle">${widthCaption}</text>
+  `;
+
+  // Depth dimension (right side)
+  const depthLabel = `${fmtMm(dims.depth)}${dims.depthEst ? " · tahmini" : ""}`;
+  const depthDim = `
+    ${dimTick(right + 22, top, right + 22, bottom, stroke)}
+    <text x="${right + 34}" y="${(top + bottom) / 2 - 6}" fill="${ink}" font-size="11" font-family="Outfit, sans-serif" font-weight="500">${depthLabel}</text>
+    <text x="${right + 34}" y="${(top + bottom) / 2 + 10}" fill="${muted}" font-size="9" font-family="Outfit, sans-serif" letter-spacing="0.06em">DERİNLİK</text>
+  `;
+
+  // Anatomy labels (like reference)
+  const anatomy = `
+    <circle cx="${left}" cy="${girdleY}" r="3" fill="none" stroke="${stroke}" stroke-width="1"/>
+    <line x1="${left}" y1="${girdleY + 3}" x2="${left}" y2="${bottom + 28}" stroke="${stroke}" stroke-width="0.9"/>
+    <text x="${left}" y="${bottom + 42}" fill="${muted}" font-size="9" font-family="Outfit, sans-serif" letter-spacing="0.08em" text-anchor="middle">GIRDLE</text>
+    <circle cx="${cx}" cy="${bottom}" r="3" fill="none" stroke="${stroke}" stroke-width="1"/>
+    <line x1="${cx}" y1="${bottom + 3}" x2="${cx}" y2="${bottom + 28}" stroke="${stroke}" stroke-width="0.9"/>
+    <text x="${cx}" y="${bottom + 42}" fill="${muted}" font-size="9" font-family="Outfit, sans-serif" letter-spacing="0.08em" text-anchor="middle">CULET</text>
+    <text x="${right + 22}" y="${top + (girdleY - top) / 2 + 3}" fill="${muted}" font-size="8" font-family="Outfit, sans-serif" letter-spacing="0.06em">CROWN</text>
+    <text x="${right + 22}" y="${girdleY + (bottom - girdleY) / 2 + 3}" fill="${muted}" font-size="8" font-family="Outfit, sans-serif" letter-spacing="0.06em">PAVILION</text>
+  `;
+
+  els.dimDiagram.innerHTML = `
+    <svg viewBox="0 0 ${svgW} ${svgH}" width="100%" role="img" aria-label="Kesim boyut şeması">
+      <rect x="0" y="0" width="${svgW}" height="${svgH}" fill="#f4f6f8" rx="8"/>
+      <path d="${profile}" fill="${fill}" stroke="${stroke}" stroke-width="1.6" stroke-linejoin="round"/>
+      ${facets}
+      ${widthDim}
+      ${depthDim}
+      ${anatomy}
+    </svg>
+  `;
 
   els.dimList.innerHTML = "";
   for (const row of rows) {
